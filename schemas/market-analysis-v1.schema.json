@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "market-analysis-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "as_of_date", "market", "stage", "confidence", "data_quality", "evidence", "invalidation", "technical_view", "horizons", "news_events"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "as_of_date": {"type": "string", "format": "date"},
+    "market": {"enum": ["us", "china", "hong_kong", "crypto", "energy", "precious_metals", "agriculture", "fx"]},
+    "stage": {"enum": ["trend_continuation", "technical_rebound", "false_breakout", "role_reversal", "range", "insufficient_evidence"]},
+    "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+    "data_quality": {"type": "object", "additionalProperties": false, "required": ["usable", "missing", "impact"], "properties": {"usable": {"type": "integer", "minimum": 0}, "missing": {"type": "integer", "minimum": 0}, "impact": {"type": "string", "maxLength": 240}}},
+    "evidence": {"type": "object", "additionalProperties": false, "required": ["core", "supporting", "contradicting"], "properties": {"core": {"$ref": "#/$defs/evidenceList"}, "supporting": {"$ref": "#/$defs/evidenceList"}, "contradicting": {"$ref": "#/$defs/evidenceList"}}},
+    "invalidation": {"type": "object", "additionalProperties": false, "required": ["condition", "error_cost"], "properties": {"condition": {"type": "string", "maxLength": 360}, "error_cost": {"type": "string", "maxLength": 360}}},
+    "technical_view": {"type": "object", "additionalProperties": false, "required": ["wave", "rule_of_7", "fibonacci", "support", "resistance"], "properties": {"wave": {"type": "string", "maxLength": 360}, "rule_of_7": {"type": "string", "maxLength": 360}, "fibonacci": {"type": "string", "maxLength": 420}, "support": {"$ref": "#/$defs/levelList"}, "resistance": {"$ref": "#/$defs/levelList"}}},
+    "horizons": {"type": "object", "additionalProperties": false, "required": ["1d", "1w", "1m", "3m"], "properties": {"1d": {"$ref": "#/$defs/horizon"}, "1w": {"$ref": "#/$defs/horizon"}, "1m": {"$ref": "#/$defs/horizon"}, "3m": {"$ref": "#/$defs/horizon"}}},
+    "news_events": {"type": "array", "maxItems": 8, "items": {"type": "object", "additionalProperties": false, "required": ["date", "event", "market_effect", "url"], "properties": {"date": {"type": "string", "maxLength": 10}, "event": {"type": "string", "maxLength": 220}, "market_effect": {"type": "string", "maxLength": 260}, "url": {"type": "string", "maxLength": 500}}}}
+  },
+  "$defs": {
+    "evidenceList": {"type": "array", "maxItems": 4, "items": {"type": "object", "additionalProperties": false, "required": ["ref", "reason"], "properties": {"ref": {"type": "string", "maxLength": 120}, "reason": {"type": "string", "maxLength": 260}}}},
+    "levelList": {"type": "array", "maxItems": 4, "items": {"type": "object", "additionalProperties": false, "required": ["series_id", "price", "touches", "strength"], "properties": {"series_id": {"type": "string"}, "price": {"type": "number"}, "touches": {"type": "integer", "minimum": 1}, "strength": {"type": "number", "minimum": 0}}}},
+    "horizon": {"type": "object", "additionalProperties": false, "required": ["direction", "confidence", "scenario", "trigger", "invalidation", "roi_percent", "risk_reward"], "properties": {"direction": {"enum": ["up", "down", "range", "uncertain"]}, "confidence": {"type": "number", "minimum": 0, "maximum": 1}, "scenario": {"type": "string", "maxLength": 320}, "trigger": {"type": "string", "maxLength": 260}, "invalidation": {"type": "string", "maxLength": 260}, "roi_percent": {"type": ["number", "null"]}, "risk_reward": {"type": ["number", "null"], "minimum": 0}}}
+  }
+}

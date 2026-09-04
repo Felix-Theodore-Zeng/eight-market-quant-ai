@@ -1,0 +1,33 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*credentials*
+*cookies*
+*session*
+
+# Databases, reports and runtime state
+data/
+output/
+backup/
+backups/
+retired-legacy-backup/
+*.duckdb
+*.duckdb.*
+*.db
+*.sqlite*
+
+# Dependencies and caches
+.venv/
+venv/
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Machine-specific handoff material
+docs/handoff-*/
+.DS_Store
+._*

@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "package_max_bytes": 36000,
+  "package_warning_ratio": 0.85,
+  "source_freshness_days": {
+    "daily": {"warning": 4, "critical": 8},
+    "crypto_24x7": {"warning": 2, "critical": 4},
+    "weekly": {"warning": 14, "critical": 28},
+    "monthly": {"warning": 45, "critical": 75}
+  },
+  "runtime_seconds": {
+    "ai": {"warning": 1800, "critical": 2350},
+    "delivery_total": {"warning": 120, "critical": 300},
+    "total": {"warning": 3000, "critical": 4200}
+  }
+}

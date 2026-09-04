@@ -1,0 +1,10 @@
+{
+  "name": "eight-market-quant-ai-adapters",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Pinned JavaScript adapters for the Eight Market Quant AI data collector.",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@mathieuc/tradingview": "3.5.2"
+  }
+}

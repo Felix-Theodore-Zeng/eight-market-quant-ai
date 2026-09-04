@@ -1,0 +1,272 @@
+{
+  "schema_version": 1,
+  "catalog_id": "eight-market-source-catalog-v1",
+  "decision_time": "09:00 Asia/Tokyo",
+  "source_statuses": [
+    "verified",
+    "existing_production",
+    "candidate",
+    "partial_history",
+    "derived"
+  ],
+  "sources": {
+    "yahoo_chart": {
+      "kind": "aggregated_market_data",
+      "history_mode": "daily_ohlcv",
+      "access": "https_chart_endpoint",
+      "notes": "Primary bulk price source where the one-year history probe passes."
+    },
+    "eastmoney": {
+      "kind": "aggregated_china_hong_kong_data",
+      "history_mode": "daily_and_periodic",
+      "access": "json_endpoints",
+      "notes": "Batch source for mainland indices, turnover, margin and Stock Connect data."
+    },
+    "deanfi_data": {
+      "kind": "aggregated_us_market_breadth",
+      "history_mode": "daily_json",
+      "access": "dual_keyless_json_endpoints",
+      "notes": "S&P 500 constituent breadth with R2 primary and GitHub Raw fallback; stores advances, declines, net breadth and A/D line."
+    },
+    "sse_margin_api": {
+      "kind": "official_mainland_margin_summary",
+      "history_mode": "date_range_json",
+      "access": "keyless_json",
+      "notes": "Official SSE aggregate margin-financing history; one request accepts a date range."
+    },
+    "szse_margin_api": {
+      "kind": "official_mainland_margin_summary",
+      "history_mode": "daily_json",
+      "access": "keyless_json_throttled",
+      "notes": "Official SZSE aggregate margin-financing observation; historical backfill must use the five-minute source queue."
+    },
+    "aastocks_hk_market": {
+      "kind": "aggregated_hong_kong_market_statistics",
+      "history_mode": "rolling_15_trading_days",
+      "access": "html_embedded_series",
+      "notes": "One response supplies market short turnover, long turnover, total turnover and short-selling ratio; parser schema is monitored."
+    },
+    "hkma_api": {
+      "kind": "aggregated_hong_kong_monetary_data",
+      "history_mode": "daily_observations",
+      "access": "keyless_json",
+      "notes": "Verified machine-readable daily HIBOR history from the HKMA Open API."
+    },
+    "fred_csv": {
+      "kind": "aggregated_rates_and_credit_data",
+      "history_mode": "daily_observations",
+      "access": "keyless_csv",
+      "notes": "One adapter covers US 2Y, US 10Y, US real yield and US high-yield spread."
+    },
+    "coinmarketcap": {
+      "kind": "aggregated_crypto_data",
+      "history_mode": "latest_and_entitled_history",
+      "access": "authenticated_api",
+      "notes": "CMC v5 derivatives endpoints provide latest per-market funding, open interest and basis. No dedicated derivatives-funding historical endpoint is currently documented, so CMC validates the daily aggregate but is not used to bootstrap the funding history."
+    },
+    "exchange_funding_apis": {
+      "kind": "public_crypto_derivatives_history",
+      "history_mode": "settled_funding_history",
+      "access": "keyless_rest_apis",
+      "notes": "Binance, OKX and Bybit public APIs provide BTC/ETH perpetual settled-funding history without a browser. Rates are normalized to an 8-hour equivalent and the daily metric uses a cross-venue median; venue components and method version are retained."
+    },
+    "coinglass": {
+      "kind": "aggregated_crypto_derivatives",
+      "history_mode": "latest_and_visible_history",
+      "access": "controlled_browser",
+      "notes": "Existing controlled-browser source for liquidation and open-interest aggregates. The BTC futures page also exposes an OI-weighted funding-rate chart; the new adapter records BTC and ETH separately and an OI-weighted composite."
+    },
+    "tradingview": {
+      "kind": "aggregated_market_data_fallback",
+      "history_mode": "daily_ohlcv",
+      "access": "pinned_node_websocket_adapter",
+      "package": "@mathieuc/tradingview@3.5.2",
+      "notes": "Non-browser adapter to TradingView's private WebSocket protocol. Anonymous one-year history is verified; optional session cookies are read only from environment variables. Browser/CDP is the operational fallback."
+    },
+    "eia_bulk": {
+      "kind": "official_energy_bulk_data",
+      "history_mode": "weekly_and_monthly_json_lines",
+      "access": "keyless_zip_bulk",
+      "notes": "PET.zip supplies weekly commercial crude stocks; INTL.zip supplies monthly country production used by a versioned OPEC+ membership aggregation."
+    },
+    "cftc_public": {
+      "kind": "official_positioning_data",
+      "history_mode": "weekly_api_and_annual_files",
+      "access": "keyless_socrata_or_csv",
+      "notes": "Official COT public reporting environment and annual compressed files; stores per-metal managed-money long, short, net and percent of open interest."
+    },
+    "world_gold_council": {
+      "kind": "aggregated_physically_backed_gold_fund_flows",
+      "history_mode": "monthly_workbook_and_release_archive",
+      "access": "public_download_with_release_page_fallback",
+      "notes": "Monthly global physically backed gold ETF flow, holdings and AUM. Gold is the explicitly defined fund-flow proxy for the precious-metals domain."
+    },
+    "usda_esmis": {
+      "kind": "official_crop_progress_reports",
+      "history_mode": "weekly_text_release_archive",
+      "access": "keyless_json_catalog_and_text",
+      "notes": "USDA ESMIS API exposes 1,100+ Crop Progress releases and machine-readable text-file URLs; parser extracts US condition/progress rows at native weekly cadence."
+    },
+    "imf_portwatch": {
+      "kind": "aggregated_ais_port_trade_estimates",
+      "history_mode": "daily_observations_weekly_refresh",
+      "access": "keyless_arcgis_json",
+      "notes": "Daily dry-bulk port calls and export-tonnage estimates for Odessa, Chornomorsk, Pivdennyi and Novorossiysk; retains PortWatch estimation and release-lag metadata."
+    },
+    "open_meteo": {
+      "kind": "aggregated_weather",
+      "history_mode": "daily_history_and_forecast",
+      "access": "keyless_json",
+      "notes": "Weather observations and forecast for the Black Sea port cluster; weather is stored separately from modeled export tonnage."
+    },
+    "farside": {
+      "kind": "aggregated_spot_etf_flows",
+      "history_mode": "daily_table",
+      "access": "reader_or_browser",
+      "notes": "Daily US BTC and ETH spot-ETF tables; the production metric is their combined net flow in USD millions with both components retained."
+    },
+    "bykaranteli_public": {
+      "kind": "aggregated_crypto_etf_and_derivatives_data",
+      "history_mode": "daily_json",
+      "access": "keyless_json",
+      "notes": "One public dataset supplies BTC/ETH spot-ETF flows and another supplies multi-venue liquidation history. Liquidation totals are explicitly retained as a conservative public-stream floor."
+    },
+    "openbb_connectors": {
+      "kind": "provider_aggregation_layer",
+      "history_mode": "provider_dependent",
+      "access": "python_connectors",
+      "notes": "Candidate wrapper for EIA, CFTC, IMF and financial-news providers; install only selected extensions."
+    },
+    "straits_live": {
+      "kind": "aggregated_hormuz_transits",
+      "history_mode": "daily_history_weekly_release",
+      "access": "keyless_json",
+      "notes": "Candidate API backed by IMF PortWatch; provenance and release lag are retained."
+    },
+    "marketaux": {
+      "kind": "aggregated_financial_news",
+      "history_mode": "api_window_queries",
+      "access": "authenticated_api",
+      "notes": "Selected news candidate. It aggregates global financial news; plan limits and historical pagination require a capability probe."
+    },
+    "alpha_vantage_news": {
+      "kind": "aggregated_historical_financial_news",
+      "history_mode": "time_bounded_api_queries",
+      "access": "authenticated_api",
+      "notes": "Candidate historical-news and backup adapter with time range, topic, relevance sort and up to 1000 returned articles per request."
+    },
+    "financial_aggregator_pool": {
+      "kind": "aggregated_specialized_market_data",
+      "history_mode": "provider_dependent",
+      "access": "adapter",
+      "notes": "Selection pool for breadth, China/HK flows, HIBOR, OPEC+, fund flows, crop state and Black Sea data."
+    }
+  },
+  "markets": {
+    "us": [
+      {"key":"sp500","label":"S&P 500","kind":"ohlcv","primary":"yahoo_chart","symbol":"^GSPC","fallback":"tradingview","status":"verified"},
+      {"key":"nasdaq100","label":"Nasdaq 100","kind":"ohlcv","primary":"yahoo_chart","symbol":"^NDX","fallback":"tradingview","status":"verified"},
+      {"key":"dow_jones","label":"Dow Jones","kind":"ohlcv","primary":"yahoo_chart","symbol":"^DJI","fallback":"tradingview","status":"verified"},
+      {"key":"russell2000","label":"Russell 2000","kind":"ohlcv","primary":"yahoo_chart","symbol":"^RUT","fallback":"tradingview","status":"verified"},
+      {"key":"vix","label":"VIX","kind":"ohlcv","primary":"yahoo_chart","symbol":"^VIX","fallback":"tradingview","status":"verified"},
+      {"key":"us10y","label":"US10Y","kind":"observation","primary":"fred_csv","symbol":"DGS10","fallback":"yahoo_chart:^TNX","status":"verified"},
+      {"key":"dxy","label":"DXY","kind":"ohlcv","primary":"yahoo_chart","symbol":"DX-Y.NYB","fallback":"tradingview","status":"verified"},
+      {"key":"us_high_yield_spread","label":"美国高收益信用利差","kind":"observation","primary":"fred_csv","symbol":"BAMLH0A0HYM2","fallback":"financial_aggregator_pool","status":"verified"},
+      {"key":"us_market_breadth","label":"市场宽度/涨跌家数","kind":"observation","primary":"deanfi_data","fallback":"tradingview","status":"verified","definition":"S&P 500 constituent advances, declines, net breadth and cumulative A/D line"}
+    ],
+    "china": [
+      {"key":"csi300","label":"CSI300","kind":"ohlcv","primary":"eastmoney","symbol":"1.000300","fallback":"yahoo_chart:000300.SS","status":"verified"},
+      {"key":"sse_composite","label":"上证综指","kind":"ohlcv","primary":"eastmoney","symbol":"1.000001","fallback":"yahoo_chart:000001.SS","status":"verified"},
+      {"key":"szse_component","label":"深证成指","kind":"ohlcv","primary":"eastmoney","symbol":"0.399001","fallback":"yahoo_chart:399001.SZ","status":"verified"},
+      {"key":"chinext","label":"创业板","kind":"ohlcv","primary":"eastmoney","symbol":"0.399006","fallback":"yahoo_chart:399006.SZ","status":"verified"},
+      {"key":"star50","label":"科创50","kind":"ohlcv","primary":"eastmoney","symbol":"1.000688","fallback":"yahoo_chart:000688.SS","status":"verified"},
+      {"key":"csi1000","label":"CSI1000","kind":"ohlcv","primary":"eastmoney","symbol":"1.000852","fallback":"yahoo_chart:000852.SS","status":"verified"},
+      {"key":"usdcnh","label":"CNH","kind":"reference","ref":"fx.usdcnh"},
+      {"key":"china10y","label":"10Y国债","kind":"observation","primary":"tradingview","symbol":"TVC:CN10Y","fallback":"financial_aggregator_pool","status":"verified"},
+      {"key":"a_share_turnover","label":"全市场成交额","kind":"observation","primary":"eastmoney","fallback":"financial_aggregator_pool","status":"verified","definition":"SSE plus SZSE daily transaction amount from the two exchange index kline records"},
+      {"key":"margin_balance","label":"两融余额","kind":"observation","primary":"eastmoney","fallback":"sse_margin_api","status":"verified","definition":"Eastmoney aggregated SSE+SZSE+BSE financing balance plus securities-lending balance, expressed in 亿元; components retained"}
+    ],
+    "hong_kong": [
+      {"key":"hang_seng","label":"恒生指数","kind":"ohlcv","primary":"yahoo_chart","symbol":"^HSI","fallback":"tradingview","status":"verified"},
+      {"key":"hang_seng_china_enterprises","label":"恒生国企指数","kind":"ohlcv","primary":"yahoo_chart","symbol":"^HSCE","fallback":"tradingview","status":"verified"},
+      {"key":"hang_seng_tech","label":"恒生科技","kind":"ohlcv","primary":"tradingview","symbol":"HSI:HSTECH","fallback":"financial_aggregator_pool","status":"verified","yahoo_symbol":"HSTECH.HK"},
+      {"key":"southbound_flow","label":"南向资金","kind":"observation","primary":"eastmoney","fallback":"financial_aggregator_pool","status":"existing_production"},
+      {"key":"hk_turnover","label":"成交额","kind":"observation","primary":"aastocks_hk_market","fallback":"financial_aggregator_pool","status":"verified","native_history_days":15},
+      {"key":"hibor","label":"HIBOR","kind":"observation","primary":"hkma_api","fallback":"financial_aggregator_pool","status":"verified"},
+      {"key":"hkdusd","label":"HKD/USD","kind":"ohlcv","primary":"yahoo_chart","symbol":"HKD=X","fallback":"tradingview","status":"verified","definition":"Quote direction must be normalized to the user-selected HKD/USD convention"},
+      {"key":"short_selling_ratio","label":"沽空比率","kind":"observation","primary":"aastocks_hk_market","fallback":"financial_aggregator_pool","status":"verified","native_history_days":15,"definition":"Market short-selling turnover divided by total market turnover"},
+      {"key":"china10y","label":"中国10Y","kind":"reference","ref":"china.china10y"},
+      {"key":"us10y","label":"美国10Y","kind":"reference","ref":"us.us10y"}
+    ],
+    "crypto": [
+      {"key":"btc","label":"BTC","kind":"ohlcv","primary":"coinmarketcap","fallback":"yahoo_chart:BTC-USD","status":"verified"},
+      {"key":"eth","label":"ETH","kind":"ohlcv","primary":"coinmarketcap","fallback":"yahoo_chart:ETH-USD","status":"verified"},
+      {"key":"sol","label":"SOL","kind":"ohlcv","primary":"coinmarketcap","fallback":"yahoo_chart:SOL-USD","status":"verified"},
+      {"key":"xrp","label":"XRP","kind":"ohlcv","primary":"coinmarketcap","fallback":"yahoo_chart:XRP-USD","status":"verified"},
+      {"key":"crypto_total_market_cap","label":"Crypto总市值","kind":"ohlcv","primary":"tradingview","symbol":"CRYPTOCAP:TOTAL","fallback":"coinmarketcap","status":"verified"},
+      {"key":"btc_dominance","label":"BTC Dominance","kind":"ohlcv","primary":"tradingview","symbol":"CRYPTOCAP:BTC.D","fallback":"coinmarketcap","status":"verified"},
+      {"key":"spot_etf_net_flow","label":"现货ETF净流量","kind":"observation","primary":"bykaranteli_public","fallback":"farside","status":"verified","definition":"Combined daily US spot BTC and ETH ETF net flow in USD millions; BTC and ETH components retained"},
+      {"key":"perpetual_funding","label":"永续Funding","kind":"observation","primary":"exchange_funding_apis","fallback":"coinmarketcap","status":"verified","definition":"BTC and ETH USDT perpetual settled funding, normalized to an 8-hour equivalent; daily asset values are cross-venue medians across Binance, OKX and Bybit, with venue components retained. CMC latest per-market funding/OI is an independent daily cross-check, not mixed into the historical series."},
+      {"key":"open_interest","label":"Open Interest","kind":"observation","primary":"coinglass","fallback":"coinmarketcap","status":"existing_production"},
+      {"key":"liquidations","label":"清算金额","kind":"observation","primary":"bykaranteli_public","fallback":"coinmarketcap","status":"verified","definition":"Daily multi-venue liquidation USD total; long, short, event, venue and symbol coverage retained; public-stream result is a conservative floor"}
+    ],
+    "energy": [
+      {"key":"brent","label":"Brent","kind":"ohlcv","primary":"yahoo_chart","symbol":"BZ=F","fallback":"tradingview","status":"verified"},
+      {"key":"wti","label":"WTI","kind":"ohlcv","primary":"yahoo_chart","symbol":"CL=F","fallback":"tradingview","status":"verified"},
+      {"key":"natural_gas","label":"天然气","kind":"ohlcv","primary":"yahoo_chart","symbol":"NG=F","fallback":"tradingview","status":"verified"},
+      {"key":"heating_oil","label":"Heating Oil","kind":"ohlcv","primary":"yahoo_chart","symbol":"HO=F","fallback":"tradingview","status":"verified"},
+      {"key":"rbob_gasoline","label":"RBOB汽油","kind":"ohlcv","primary":"yahoo_chart","symbol":"RB=F","fallback":"tradingview","status":"verified"},
+      {"key":"brent_wti_spread","label":"Brent-WTI spread","kind":"derived","inputs":["energy.brent","energy.wti"],"status":"derived"},
+      {"key":"crack_spread","label":"裂解价差","kind":"derived","inputs":["energy.wti","energy.heating_oil","energy.rbob_gasoline"],"status":"derived","definition":"CME-style 3-2-1 crack spread in USD/barrel: (2*RBOB*42 + HeatingOil*42 - 3*WTI)/3"},
+      {"key":"us_crude_inventory","label":"美国原油库存","kind":"observation","primary":"eia_bulk","symbol":"PET.WCESTUS1.W","fallback":"openbb_connectors","status":"verified","cadence":"weekly"},
+      {"key":"opec_plus_output","label":"OPEC+产量","kind":"derived","primary":"eia_bulk","fallback":"openbb_connectors","status":"verified","cadence":"monthly","definition":"Sum of EIA monthly crude oil including lease condensate production for a versioned Declaration-of-Cooperation country membership set"},
+      {"key":"hormuz_shipping","label":"Hormuz航运量","kind":"observation","primary":"straits_live","fallback":"openbb_connectors","status":"verified"}
+    ],
+    "precious_metals": [
+      {"key":"gold","label":"黄金","kind":"ohlcv","primary":"yahoo_chart","symbol":"GC=F","fallback":"tradingview","status":"verified"},
+      {"key":"silver","label":"白银","kind":"ohlcv","primary":"yahoo_chart","symbol":"SI=F","fallback":"tradingview","status":"verified"},
+      {"key":"platinum","label":"铂金","kind":"ohlcv","primary":"yahoo_chart","symbol":"PL=F","fallback":"tradingview","status":"verified"},
+      {"key":"palladium","label":"钯金","kind":"ohlcv","primary":"yahoo_chart","symbol":"PA=F","fallback":"tradingview","status":"verified"},
+      {"key":"gold_silver_ratio","label":"Gold/Silver Ratio","kind":"derived","inputs":["precious_metals.gold","precious_metals.silver"],"status":"derived"},
+      {"key":"us_real_yield","label":"美国实际收益率","kind":"observation","primary":"fred_csv","symbol":"DFII10","fallback":"financial_aggregator_pool","status":"verified"},
+      {"key":"us10y","label":"US10Y","kind":"reference","ref":"us.us10y"},
+      {"key":"dxy","label":"DXY","kind":"reference","ref":"us.dxy"},
+      {"key":"cftc_positioning","label":"CFTC仓位","kind":"observation","primary":"cftc_public","fallback":"openbb_connectors","status":"verified","cadence":"weekly","definition":"Per-metal managed-money long, short, net and net percent of open interest for gold, silver, platinum and palladium"},
+      {"key":"precious_metals_fund_flow","label":"贵金属基金流量","kind":"observation","primary":"world_gold_council","fallback":"deanfi_data","status":"verified","cadence":"monthly","definition":"Global physically backed gold ETF net flow in USD; gold is the dominant and explicitly declared proxy for precious-metals fund demand"}
+    ],
+    "agriculture": [
+      {"key":"corn","label":"玉米","kind":"ohlcv","primary":"yahoo_chart","symbol":"ZC=F","fallback":"tradingview","status":"verified"},
+      {"key":"wheat","label":"小麦","kind":"ohlcv","primary":"yahoo_chart","symbol":"ZW=F","fallback":"tradingview","status":"verified"},
+      {"key":"soybeans","label":"大豆","kind":"ohlcv","primary":"yahoo_chart","symbol":"ZS=F","fallback":"tradingview","status":"verified"},
+      {"key":"soybean_oil","label":"豆油","kind":"ohlcv","primary":"yahoo_chart","symbol":"ZL=F","fallback":"tradingview","status":"verified"},
+      {"key":"cotton","label":"棉花","kind":"ohlcv","primary":"yahoo_chart","symbol":"CT=F","fallback":"tradingview","status":"verified"},
+      {"key":"coffee","label":"咖啡","kind":"ohlcv","primary":"yahoo_chart","symbol":"KC=F","fallback":"tradingview","status":"verified"},
+      {"key":"sugar","label":"糖","kind":"ohlcv","primary":"yahoo_chart","symbol":"SB=F","fallback":"tradingview","status":"verified"},
+      {"key":"cocoa","label":"可可","kind":"ohlcv","primary":"yahoo_chart","symbol":"CC=F","fallback":"tradingview","status":"verified"},
+      {"key":"usda_crop_condition","label":"USDA作物状态","kind":"observation","primary":"usda_esmis","fallback":"openbb_connectors","status":"verified","cadence":"weekly","definition":"US national crop condition and progress rows for corn, wheat, soybeans and cotton from the weekly Crop Progress text release"},
+      {"key":"black_sea_export_weather","label":"黑海出口/天气","kind":"event_bundle","primary":"imf_portwatch","fallback":"open_meteo","status":"verified","definition":"Separate fields: modeled daily dry-bulk exports/port calls for the main Ukraine and Russia Black Sea ports, plus precipitation, wind and temperature risk for the same port cluster"}
+    ],
+    "fx": [
+      {"key":"dxy","label":"DXY","kind":"reference","ref":"us.dxy"},
+      {"key":"eurusd","label":"EUR/USD","kind":"ohlcv","primary":"yahoo_chart","symbol":"EURUSD=X","fallback":"tradingview","status":"verified"},
+      {"key":"usdjpy","label":"USD/JPY","kind":"ohlcv","primary":"yahoo_chart","symbol":"JPY=X","fallback":"tradingview","status":"verified"},
+      {"key":"gbpusd","label":"GBP/USD","kind":"ohlcv","primary":"yahoo_chart","symbol":"GBPUSD=X","fallback":"tradingview","status":"verified"},
+      {"key":"usdcnh","label":"USD/CNH","kind":"ohlcv","primary":"tradingview","symbol":"FX_IDC:USDCNH","fallback":"financial_aggregator_pool","status":"verified"},
+      {"key":"audusd","label":"AUD/USD","kind":"ohlcv","primary":"yahoo_chart","symbol":"AUDUSD=X","fallback":"tradingview","status":"verified"},
+      {"key":"usdcad","label":"USD/CAD","kind":"ohlcv","primary":"yahoo_chart","symbol":"CAD=X","fallback":"tradingview","status":"verified"},
+      {"key":"usdchf","label":"USD/CHF","kind":"ohlcv","primary":"yahoo_chart","symbol":"CHF=X","fallback":"tradingview","status":"verified"},
+      {"key":"us2y","label":"美国2Y国债收益率","kind":"observation","primary":"fred_csv","symbol":"DGS2","fallback":"tradingview","status":"verified"},
+      {"key":"us10y","label":"美国10Y收益率","kind":"reference","ref":"us.us10y"},
+      {"key":"us2y_germany2y_spread","label":"US 2Y − Germany 2Y利差","kind":"derived","primary":"tradingview","symbol":"TVC:DE02Y","inputs":["fx.us2y"],"fallback":"financial_aggregator_pool","status":"verified"},
+      {"key":"us2y_japan2y_spread","label":"US 2Y − Japan 2Y利差","kind":"derived","primary":"tradingview","symbol":"TVC:JP02Y","inputs":["fx.us2y"],"fallback":"financial_aggregator_pool","status":"verified"},
+      {"key":"us2y_china2y_spread","label":"US 2Y − China 2Y利差","kind":"derived","primary":"tradingview","symbol":"TVC:CN02Y","inputs":["fx.us2y"],"fallback":"financial_aggregator_pool","status":"verified"},
+      {"key":"vix","label":"VIX","kind":"reference","ref":"us.vix"}
+    ]
+  },
+  "news": {
+    "primary_pipeline": "native_news_ingestion",
+    "candidate_sources": ["marketaux", "alpha_vantage_news"],
+    "storage_policy": "normalize_into_duckdb_events_table",
+    "selection_windows": ["1w", "1m", "3m", "1y"]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "max_bytes_per_market": 36000,
+  "windows": {"1w": 5, "1m": 21, "3m": 63, "1y": 252},
+  "support_resistance": {"max_each": 4, "pivot_radius": 3, "atr_multiplier": 0.75, "minimum_price_tolerance": 0.006},
+  "rule_of_7": {"multipliers": [1.75, 2.33, 3.5]},
+  "core_series": {
+    "us": ["sp500", "nasdaq100", "russell2000", "vix", "us10y", "dxy"],
+    "china": ["csi300", "sse_composite", "chinext", "star50", "csi1000", "usdcnh"],
+    "hong_kong": ["hang_seng", "hang_seng_china_enterprises", "hang_seng_tech", "southbound_flow", "hkdusd"],
+    "crypto": ["btc", "eth", "sol", "xrp", "crypto_total_market_cap", "btc_dominance", "perpetual_funding"],
+    "energy": ["brent", "wti", "natural_gas", "heating_oil", "rbob_gasoline", "crack_spread"],
+    "precious_metals": ["gold", "silver", "platinum", "palladium", "gold_silver_ratio", "us_real_yield"],
+    "agriculture": ["corn", "wheat", "soybeans", "soybean_oil", "cotton", "coffee", "sugar", "cocoa"],
+    "fx": ["dxy", "eurusd", "usdjpy", "gbpusd", "usdcnh", "audusd", "usdcad", "usdchf", "vix"]
+  }
+}

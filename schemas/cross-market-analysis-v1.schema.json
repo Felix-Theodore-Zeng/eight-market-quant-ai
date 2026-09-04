@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "cross-market-analysis-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "as_of_date", "global_regime", "market_summaries", "transmission_paths", "cross_market_contradictions", "plan_b"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "as_of_date": {"type": "string", "format": "date"},
+    "global_regime": {"type": "object", "additionalProperties": false, "required": ["label", "confidence", "thesis"], "properties": {"label": {"type": "string", "maxLength": 120}, "confidence": {"type": "number", "minimum": 0, "maximum": 1}, "thesis": {"type": "string", "maxLength": 700}}},
+    "market_summaries": {"type": "array", "minItems": 8, "maxItems": 8, "items": {"type": "object", "additionalProperties": false, "required": ["market", "stage", "horizons", "key_risk"], "properties": {"market": {"enum": ["us", "china", "hong_kong", "crypto", "energy", "precious_metals", "agriculture", "fx"]}, "stage": {"type": "string"}, "horizons": {"type": "object", "additionalProperties": false, "required": ["1d", "1w", "1m", "3m"], "properties": {"1d": {"type": "string"}, "1w": {"type": "string"}, "1m": {"type": "string"}, "3m": {"type": "string"}}}, "key_risk": {"type": "string", "maxLength": 300}}}},
+    "transmission_paths": {"type": "array", "maxItems": 10, "items": {"type": "object", "additionalProperties": false, "required": ["from", "to", "mechanism", "evidence", "invalidation"], "properties": {"from": {"type": "string"}, "to": {"type": "string"}, "mechanism": {"type": "string", "maxLength": 320}, "evidence": {"type": "array", "maxItems": 4, "items": {"type": "string"}}, "invalidation": {"type": "string", "maxLength": 280}}}},
+    "cross_market_contradictions": {"type": "array", "maxItems": 8, "items": {"type": "string", "maxLength": 320}},
+    "plan_b": {"type": "string", "maxLength": 700}
+  }
+}

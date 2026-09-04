@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "model_routing": "hermes_primary_with_fallback_chain",
+  "limits": {
+    "market_result_bytes": 14000,
+    "cross_market_result_bytes": 24000,
+    "core_evidence_max": 4,
+    "supporting_evidence_max": 4,
+    "contradicting_evidence_max": 4,
+    "news_events_max": 8,
+    "transmission_paths_max": 10
+  },
+  "markets": {
+    "us": {"label": "美国市场", "focus": "价格核心、风险偏好、波动率、利率、美元与信用风险的独立确认"},
+    "china": {"label": "中国A股", "focus": "宽基与成长风格、人民币、国债、成交和两融的独立确认"},
+    "hong_kong": {"label": "香港市场", "focus": "指数结构、南向资金、成交、利率、港币与沽空活动"},
+    "crypto": {"label": "数字货币", "focus": "价格、市值、主导率、ETF流量、Funding、OI与清算的杠杆验证"},
+    "energy": {"label": "能源", "focus": "油气与成品油结构、价差、库存、OPEC+供给及Hormuz运输"},
+    "precious_metals": {"label": "贵金属", "focus": "金银铂钯、金银比、实际利率、美元、仓位和基金流量"},
+    "agriculture": {"label": "农产品", "focus": "主要作物价格结构、USDA作物状态和黑海出口天气"},
+    "fx": {"label": "外汇", "focus": "DXY、USDJPY、USDCNH为高权重节点，并结合主要货币、收益率及跨国利差"}
+  },
+  "stage_values": ["trend_continuation", "technical_rebound", "false_breakout", "role_reversal", "range", "insufficient_evidence"],
+  "direction_values": ["up", "down", "range", "uncertain"],
+  "horizons": ["1d", "1w", "1m", "3m"]
+}
