@@ -159,6 +159,22 @@ class MarketSystemTest(unittest.TestCase):
         self.assertEqual(indicator["current_context"]["date"], "2026-09-03")
         self.assertEqual(indicator["current_context"]["weather"]["wind_kmh_max"], 30.0)
 
+    def test_opec_monthly_context_does_not_publish_stitched_statistics(self):
+        row = {"series_id": "energy.opec_plus_output", "observed_date": "2026-06-30",
+               "value": 36280.0, "close": 36280.0, "source": "opec_momr",
+               "quality_status": "ok", "available_at_utc": "2026-08-12T13:59:36+00:00",
+               "method_version": "opec-momr-doc-total-v1",
+               "metadata": {"production_month": "2026-06-30", "report_month": "2026-07-01"}}
+        upsert_observations(self.connection, [row])
+        compute_statistics(self.connection, "2026-09-03")
+        output = Path(self.temp.name) / "opec-packages"
+        build_packages(self.connection, "2026-09-03", output)
+        package = json.loads((output / "energy.json").read_text(encoding="utf-8"))
+        indicator = next(item for item in package["indicators"] if item["key"] == "opec_plus_output")
+        self.assertEqual(indicator["current_context"]["production_month"], "2026-06-30")
+        self.assertEqual(indicator["statistics"], {})
+        self.assertNotIn("calibration", indicator)
+
 
 if __name__ == "__main__":
     unittest.main()

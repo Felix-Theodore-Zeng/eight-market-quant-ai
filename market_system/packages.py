@@ -54,12 +54,16 @@ def _indicator_payload(connection, market: str, item: dict[str, Any], as_of_date
       "slope_r2": _round(row[11])} for row in features}
     # 20d/60d duplicate the month/quarter observation windows. Expose only their
     # calibration value and keep the four decision horizons fully described.
-    payload["statistics"] = {key: all_statistics[key] for key in ("1w", "1m", "3m", "1y")
-                             if key in all_statistics}
-    payload["calibration"] = {
-        "realized_volatility_20d": (all_statistics.get("20d") or {}).get("realized_volatility"),
-        "realized_volatility_60d": (all_statistics.get("60d") or {}).get("realized_volatility"),
-    }
+    if item.get("statistics_enabled", True):
+        payload["statistics"] = {key: all_statistics[key] for key in ("1w", "1m", "3m", "1y")
+                                 if key in all_statistics}
+        payload["calibration"] = {
+            "realized_volatility_20d": (all_statistics.get("20d") or {}).get("realized_volatility"),
+            "realized_volatility_60d": (all_statistics.get("60d") or {}).get("realized_volatility"),
+        }
+    else:
+        payload["statistics"] = {}
+        payload["statistics_note"] = item.get("statistics_note", "Statistics disabled for this series.")
     if core:
         levels = connection.execute("""SELECT level_type,rank,price,touch_count,last_touch_date,distance_percent,strength
           FROM technical_levels WHERE series_id=? AND as_of_date=? ORDER BY level_type,rank""",
