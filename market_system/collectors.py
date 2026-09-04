@@ -14,8 +14,9 @@ import urllib.parse
 import urllib.request
 import zipfile
 from collections import defaultdict
+from email.utils import parsedate_to_datetime
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -363,6 +364,55 @@ def cftc_metals_positioning(series_id: str, timeout: float = 45) -> list[dict[st
     return rows
 
 
+BLACK_SEA_PORTS = {
+    "Odesa": (46.4825, 30.7233),
+    "Chornomorsk": (46.3017, 30.6569),
+    "Pivdennyi": (46.6133, 31.0128),
+    "Novorossiysk": (44.7239, 37.7689),
+}
+
+
+def open_meteo_black_sea_weather(timeout: float = 45) -> dict[str, dict[str, Any]]:
+    """Daily port-cluster weather, independent of PortWatch's weekly publication cycle."""
+    names = list(BLACK_SEA_PORTS)
+    latitudes = ",".join(str(BLACK_SEA_PORTS[name][0]) for name in names)
+    longitudes = ",".join(str(BLACK_SEA_PORTS[name][1]) for name in names)
+    params = {
+        "latitude": latitudes, "longitude": longitudes,
+        "daily": "temperature_2m_mean,precipitation_sum,wind_speed_10m_max,wind_gusts_10m_max",
+        "past_days": "92", "forecast_days": "1", "timezone": "UTC",
+    }
+    payload = fetch_json("https://api.open-meteo.com/v1/forecast?" + urllib.parse.urlencode(params), timeout)
+    locations = payload if isinstance(payload, list) else [payload]
+    grouped: dict[str, dict[str, Any]] = defaultdict(lambda: {"ports": {}})
+    for index, location in enumerate(locations):
+        daily = location.get("daily") or {}
+        days = daily.get("time") or []
+        for position, day in enumerate(days):
+            def value(field: str) -> float | None:
+                values = daily.get(field) or []
+                return _finite(values[position] if position < len(values) else None)
+            grouped[str(day)]["ports"][names[index] if index < len(names) else str(index)] = {
+                "temperature_c_mean": value("temperature_2m_mean"),
+                "precipitation_mm": value("precipitation_sum"),
+                "wind_kmh_max": value("wind_speed_10m_max"),
+                "gust_kmh_max": value("wind_gusts_10m_max"),
+            }
+    result = {}
+    for day, item in grouped.items():
+        ports = item["ports"]
+        temperatures = [x["temperature_c_mean"] for x in ports.values() if x["temperature_c_mean"] is not None]
+        precipitation = [x["precipitation_mm"] for x in ports.values() if x["precipitation_mm"] is not None]
+        winds = [x["wind_kmh_max"] for x in ports.values() if x["wind_kmh_max"] is not None]
+        gusts = [x["gust_kmh_max"] for x in ports.values() if x["gust_kmh_max"] is not None]
+        result[day] = {"source": "open_meteo", "ports": ports,
+                       "temperature_c_mean": sum(temperatures) / len(temperatures) if temperatures else None,
+                       "precipitation_mm_mean": sum(precipitation) / len(precipitation) if precipitation else None,
+                       "wind_kmh_max": max(winds) if winds else None,
+                       "gust_kmh_max": max(gusts) if gusts else None}
+    return result
+
+
 def portwatch_black_sea(series_id: str, timeout: float = 45) -> list[dict[str, Any]]:
     params = {
         "where": "portid in ('port489','port843','port1419')",
@@ -394,10 +444,26 @@ def portwatch_black_sea(series_id: str, timeout: float = 45) -> list[dict[str, A
         record = grouped.setdefault(day, {"export_dry_bulk": 0.0, "portcalls_dry_bulk": 0.0, "ports": []})
         record["export_dry_bulk"] += export; record["portcalls_dry_bulk"] += calls
         record["ports"].append(item.get("portname") or item.get("portid"))
-    return [{"series_id": series_id, "observed_date": day, "value": item["export_dry_bulk"], "close": item["export_dry_bulk"],
-             "source": "imf_portwatch", "source_priority": 10, "quality_status": "ok",
-             "method_version": "imf-portwatch-black-sea-v1", "available_at_utc": f"{day}T23:59:59+00:00",
-             "metadata": item} for day, item in sorted(grouped.items())]
+    weather = open_meteo_black_sea_weather(timeout)
+    days = sorted(set(grouped) | set(weather))
+    latest_export = None
+    rows = []
+    for day in days:
+        export = grouped.get(day)
+        if export is not None:
+            latest_export = {"date": day, **export}
+        day_after = date.fromisoformat(day) + timedelta(days=1)
+        metadata = {"component_dates": {"exports": latest_export["date"] if latest_export else None,
+                                         "weather": day if day in weather else None},
+                    "latest_export": latest_export, "weather": weather.get(day),
+                    "publication_note": "PortWatch daily estimates are released weekly; weather updates daily."}
+        value = export["export_dry_bulk"] if export else None
+        rows.append({"series_id": series_id, "observed_date": day, "value": value, "close": value,
+                     "source": "imf_portwatch+open_meteo", "source_priority": 5,
+                     "quality_status": "ok" if export and day in weather else "partial",
+                     "method_version": "black-sea-export-weather-v2",
+                     "available_at_utc": f"{day_after.isoformat()}T00:00:00+00:00", "metadata": metadata})
+    return rows
 
 
 def eia_petroleum_series(series_id: str, eia_series: str = "PET.WCESTUS1.W", timeout: float = 180) -> list[dict[str, Any]]:
@@ -447,6 +513,49 @@ OPEC_PLUS_EIA_CODES = {
 }
 
 
+def opec_momr_latest(series_id: str, timeout: float = 60, months_to_try: int = 6) -> dict[str, Any] | None:
+    """Read the latest available official MOMR DoC total without inventing daily production."""
+    try:
+        from pypdf import PdfReader
+    except ImportError:
+        return None
+    report_month = date.today().replace(day=1)
+    pattern = re.compile(
+        r"Total\s+DoC\s+crude\s+oil\s+production\s+averaged\s+([\d.]+)\s+mb/d\s+in\s+([A-Za-z]+)\s+(\d{4})",
+        re.I,
+    )
+    for _ in range(months_to_try):
+        slug = report_month.strftime("%B-%Y").lower()
+        url = f"https://www.opec.org/assets/assetdb/momr-{slug}.pdf"
+        try:
+            request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(request, timeout=timeout) as response:
+                pdf = response.read()
+                modified = response.headers.get("Last-Modified")
+            if not pdf.startswith(b"%PDF"):
+                raise ValueError("response is not a PDF")
+            reader = PdfReader(io.BytesIO(pdf))
+            text = "\n".join(page.extract_text() or "" for page in reader.pages)
+            match = pattern.search(text)
+            if not match:
+                raise ValueError("DoC total sentence not found")
+            production_month = datetime.strptime(f"{match.group(2)} {match.group(3)}", "%B %Y").date()
+            next_month = (production_month.replace(day=28) + timedelta(days=4)).replace(day=1)
+            observed = next_month - timedelta(days=1)
+            available = parsedate_to_datetime(modified).astimezone(timezone.utc) if modified else datetime.now(timezone.utc)
+            value = float(match.group(1)) * 1000.0
+            return {"series_id": series_id, "observed_date": observed.isoformat(), "value": value, "close": value,
+                    "source": "opec_momr", "source_priority": 5, "quality_status": "ok",
+                    "method_version": "opec-momr-doc-total-v1", "available_at_utc": available.isoformat(),
+                    "metadata": {"unit": "thousand barrels per day", "report_url": url,
+                                 "report_month": report_month.isoformat(), "production_month": observed.isoformat(),
+                                 "coverage": "Total Declaration of Cooperation crude production",
+                                 "measurement": "secondary-source monthly estimate; not a daily actual"}}
+        except Exception:
+            report_month = (report_month - timedelta(days=1)).replace(day=1)
+    return None
+
+
 def eia_opec_plus_output(series_id: str, timeout: float = 240) -> list[dict[str, Any]]:
     """Sum monthly country crude production for the versioned 22-country DoC set."""
     file_descriptor, archive_path = tempfile.mkstemp(suffix=".zip")
@@ -494,6 +603,9 @@ def eia_opec_plus_output(series_id: str, timeout: float = 240) -> list[dict[str,
                      "available_at_utc": max(updated) if updated else f"{day}T23:59:59+00:00",
                      "metadata": {"unit": "thousand barrels per day", "countries": countries,
                                   "membership_version": "DoC-22-2026", "component_count": len(countries)}})
+    momr = opec_momr_latest(series_id, min(timeout, 90))
+    if momr and (not rows or momr["observed_date"] > rows[-1]["observed_date"]):
+        rows.append(momr)
     return rows
 
 

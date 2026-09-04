@@ -22,8 +22,8 @@ def _series_id(market: str, item: dict[str, Any]) -> str:
 def _indicator_payload(connection, market: str, item: dict[str, Any], as_of_date: str, core: bool) -> dict[str, Any]:
     series_id = _series_id(market, item)
     latest = connection.execute("""
-      SELECT observed_date, COALESCE(close,value), source, quality_status
-      FROM canonical_observations WHERE series_id=? AND observed_date<=?
+      SELECT observed_date, COALESCE(close,value), source, quality_status,metadata_json
+      FROM canonical_observations WHERE series_id=? AND observed_date<=? AND COALESCE(close,value) IS NOT NULL
       ORDER BY observed_date DESC LIMIT 1
     """, [series_id, as_of_date]).fetchone()
     payload: dict[str, Any] = {"key": item["key"], "label": item["label"], "series_id": series_id,
@@ -31,6 +31,15 @@ def _indicator_payload(connection, market: str, item: dict[str, Any], as_of_date
     if latest:
         payload["latest"] = {"date": latest[0].isoformat(), "value": _round(latest[1]),
                              "source": latest[2], "quality": latest[3]}
+    if item.get("kind") == "event_bundle":
+        context = connection.execute("""SELECT observed_date,source,quality_status,metadata_json
+          FROM canonical_observations WHERE series_id=? AND observed_date<=?
+          ORDER BY observed_date DESC LIMIT 1""", [series_id, as_of_date]).fetchone()
+        if context:
+            metadata = context[3] if isinstance(context[3], dict) else json.loads(str(context[3]) or "{}")
+            payload["current_context"] = {"date": context[0].isoformat(), "source": context[1],
+                                          "quality": context[2], **metadata}
+            payload["status"] = "ok"
     features = connection.execute("""
       SELECT window_id, observations, period_return, high_value, high_date, low_value, low_date,
              realized_volatility, empirical_percentile, max_drawdown, log_slope_annualized, slope_r2

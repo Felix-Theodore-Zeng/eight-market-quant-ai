@@ -6,7 +6,8 @@
     "daily": {"warning": 4, "critical": 8},
     "crypto_24x7": {"warning": 2, "critical": 4},
     "weekly": {"warning": 14, "critical": 28},
-    "monthly": {"warning": 45, "critical": 75}
+    "monthly": {"warning": 75, "critical": 120},
+    "mixed_daily_weekly": {"warning": 4, "critical": 10}
   },
   "runtime_seconds": {
     "ai": {"warning": 1800, "critical": 2350},

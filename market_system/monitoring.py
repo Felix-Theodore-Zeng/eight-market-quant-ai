@@ -74,8 +74,26 @@ def evaluate_system(db_path: str | Path, analysis_date: str,
                                 "lag_days": None, "reason": "数据库中没有可用历史"})
                 continue
             lag = max(0, (target_date - latest).days)
-            sources.append({"series_id": series_id, "status": _severity(lag, limits),
-                            "latest_date": latest.isoformat(), "lag_days": lag, "cadence": bucket})
+            item = {"series_id": series_id, "status": _severity(lag, limits),
+                    "latest_date": latest.isoformat(), "lag_days": lag, "cadence": bucket}
+            if series_id == "agriculture.black_sea_export_weather":
+                metadata_row = connection.execute("""SELECT metadata_json FROM canonical_observations
+                  WHERE series_id=? AND observed_date<=? ORDER BY observed_date DESC LIMIT 1""",
+                  [series_id, analysis_date]).fetchone()
+                raw_metadata = metadata_row[0] if metadata_row else None
+                metadata = raw_metadata if isinstance(raw_metadata, dict) else (json.loads(str(raw_metadata)) if raw_metadata else {})
+                component_dates = metadata.get("component_dates") or {}
+                weather_date = component_dates.get("weather")
+                export_date = component_dates.get("exports")
+                weather_lag = (target_date - date.fromisoformat(weather_date)).days if weather_date else None
+                export_lag = (target_date - date.fromisoformat(export_date)).days if export_date else None
+                component_statuses = [
+                    "critical" if weather_lag is None else _severity(max(0, weather_lag), freshness_policy["daily"]),
+                    "critical" if export_lag is None else _severity(max(0, export_lag), freshness_policy["weekly"]),
+                ]
+                item.update({"component_lags": {"weather_days": weather_lag, "exports_days": export_lag},
+                             "status": _worst(component_statuses)})
+            sources.append(item)
 
         package_rows = connection.execute("""SELECT market,byte_length FROM analysis_packages
           WHERE as_of_date=? ORDER BY market""", [analysis_date]).fetchall()

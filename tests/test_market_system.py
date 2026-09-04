@@ -2,13 +2,15 @@ import json
 import tempfile
 import unittest
 from unittest.mock import patch
+from unittest.mock import MagicMock
 from datetime import date, timedelta
 from pathlib import Path
 
 from market_system.analytics import compute_statistics
 from market_system.ai_pipeline import _write_markdown
 from market_system.bootstrap import collect_item
-from market_system.collectors import _iso_day
+from market_system.collectors import (_iso_day, opec_momr_latest,
+                                      open_meteo_black_sea_weather)
 from market_system.catalog import load_catalog
 from market_system.db import connect, sync_catalog, upsert_observations
 from market_system.packages import build_packages
@@ -112,6 +114,50 @@ class MarketSystemTest(unittest.TestCase):
         self.assertEqual(result["status"], "critical")
         self.assertIn("未找到", result["daily_run"]["reason"])
         self.assertIn("监控失败", alert_text(result))
+
+    def test_open_meteo_black_sea_weather_aggregates_daily_ports(self):
+        location = {"daily": {"time": ["2026-09-03"], "temperature_2m_mean": [20],
+                    "precipitation_sum": [2], "wind_speed_10m_max": [30], "wind_gusts_10m_max": [45]}}
+        with patch("market_system.collectors.fetch_json", return_value=[location] * 4):
+            result = open_meteo_black_sea_weather()
+        self.assertEqual(result["2026-09-03"]["wind_kmh_max"], 30)
+        self.assertEqual(len(result["2026-09-03"]["ports"]), 4)
+
+    def test_opec_momr_latest_parses_total_and_keeps_monthly_date(self):
+        response = MagicMock()
+        response.read.return_value = b"%PDF-fake"
+        response.headers = {"Last-Modified": "Wed, 15 Jul 2026 12:00:00 GMT"}
+        response.__enter__.return_value = response
+        page = MagicMock()
+        page.extract_text.return_value = "Total DoC crude oil production averaged 36.28 mb/d in June 2026"
+        reader = MagicMock(); reader.pages = [page]
+        with patch("urllib.request.urlopen", return_value=response), patch("pypdf.PdfReader", return_value=reader):
+            result = opec_momr_latest("energy.opec_plus_output")
+        self.assertEqual(result["observed_date"], "2026-06-30")
+        self.assertEqual(result["value"], 36280.0)
+
+    def test_event_bundle_exposes_current_weather_without_forward_filling_export(self):
+        rows = [
+            {"series_id": "agriculture.black_sea_export_weather", "observed_date": "2026-08-28",
+             "value": 100.0, "close": 100.0, "source": "fixture", "quality_status": "ok",
+             "available_at_utc": "2026-08-29T00:00:00+00:00", "method_version": "fixture-v2",
+             "metadata": {"component_dates": {"exports": "2026-08-28", "weather": "2026-08-28"}}},
+            {"series_id": "agriculture.black_sea_export_weather", "observed_date": "2026-09-03",
+             "value": None, "close": None, "source": "fixture", "quality_status": "partial",
+             "available_at_utc": "2026-09-04T00:00:00+00:00", "method_version": "fixture-v2",
+             "metadata": {"component_dates": {"exports": "2026-08-28", "weather": "2026-09-03"},
+                          "latest_export": {"date": "2026-08-28", "export_dry_bulk": 100.0},
+                          "weather": {"wind_kmh_max": 30.0}}},
+        ]
+        upsert_observations(self.connection, rows)
+        compute_statistics(self.connection, "2026-09-03")
+        output = Path(self.temp.name) / "event-packages"
+        build_packages(self.connection, "2026-09-03", output)
+        package = json.loads((output / "agriculture.json").read_text(encoding="utf-8"))
+        indicator = next(item for item in package["indicators"] if item["key"] == "black_sea_export_weather")
+        self.assertEqual(indicator["latest"]["date"], "2026-08-28")
+        self.assertEqual(indicator["current_context"]["date"], "2026-09-03")
+        self.assertEqual(indicator["current_context"]["weather"]["wind_kmh_max"], 30.0)
 
 
 if __name__ == "__main__":

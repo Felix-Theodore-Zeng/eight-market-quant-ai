@@ -89,6 +89,12 @@
       "access": "keyless_zip_bulk",
       "notes": "PET.zip supplies weekly commercial crude stocks; INTL.zip supplies monthly country production used by a versioned OPEC+ membership aggregation."
     },
+    "opec_momr": {
+      "kind": "official_monthly_doc_production",
+      "history_mode": "latest_official_monthly_total",
+      "access": "public_pdf",
+      "notes": "Latest official OPEC Monthly Oil Market Report DoC crude-production total; used ahead of lagging all-country EIA completion and never labeled as a daily actual."
+    },
     "cftc_public": {
       "kind": "official_positioning_data",
       "history_mode": "weekly_api_and_annual_files",
@@ -219,7 +225,7 @@
       {"key":"brent_wti_spread","label":"Brent-WTI spread","kind":"derived","inputs":["energy.brent","energy.wti"],"status":"derived"},
       {"key":"crack_spread","label":"裂解价差","kind":"derived","inputs":["energy.wti","energy.heating_oil","energy.rbob_gasoline"],"status":"derived","definition":"CME-style 3-2-1 crack spread in USD/barrel: (2*RBOB*42 + HeatingOil*42 - 3*WTI)/3"},
       {"key":"us_crude_inventory","label":"美国原油库存","kind":"observation","primary":"eia_bulk","symbol":"PET.WCESTUS1.W","fallback":"openbb_connectors","status":"verified","cadence":"weekly"},
-      {"key":"opec_plus_output","label":"OPEC+产量","kind":"derived","primary":"eia_bulk","fallback":"openbb_connectors","status":"verified","cadence":"monthly","definition":"Sum of EIA monthly crude oil including lease condensate production for a versioned Declaration-of-Cooperation country membership set"},
+      {"key":"opec_plus_output","label":"OPEC+产量","kind":"derived","primary":"eia_bulk","fallback":"opec_momr","status":"verified","cadence":"monthly","definition":"EIA component history plus the latest official OPEC MOMR total Declaration-of-Cooperation crude-production estimate; retains production month and publication time and is never represented as a daily actual"},
       {"key":"hormuz_shipping","label":"Hormuz航运量","kind":"observation","primary":"straits_live","fallback":"openbb_connectors","status":"verified"}
     ],
     "precious_metals": [
@@ -244,7 +250,7 @@
       {"key":"sugar","label":"糖","kind":"ohlcv","primary":"yahoo_chart","symbol":"SB=F","fallback":"tradingview","status":"verified"},
       {"key":"cocoa","label":"可可","kind":"ohlcv","primary":"yahoo_chart","symbol":"CC=F","fallback":"tradingview","status":"verified"},
       {"key":"usda_crop_condition","label":"USDA作物状态","kind":"observation","primary":"usda_esmis","fallback":"openbb_connectors","status":"verified","cadence":"weekly","definition":"US national crop condition and progress rows for corn, wheat, soybeans and cotton from the weekly Crop Progress text release"},
-      {"key":"black_sea_export_weather","label":"黑海出口/天气","kind":"event_bundle","primary":"imf_portwatch","fallback":"open_meteo","status":"verified","definition":"Separate fields: modeled daily dry-bulk exports/port calls for the main Ukraine and Russia Black Sea ports, plus precipitation, wind and temperature risk for the same port cluster"}
+      {"key":"black_sea_export_weather","label":"黑海出口/天气","kind":"event_bundle","primary":"imf_portwatch","fallback":"open_meteo","status":"verified","cadence":"mixed_daily_weekly","definition":"Separate component dates: PortWatch modeled daily dry-bulk exports/port calls released weekly, plus daily Open-Meteo precipitation, wind, gust and temperature for Odesa, Chornomorsk, Pivdennyi and Novorossiysk"}
     ],
     "fx": [
       {"key":"dxy","label":"DXY","kind":"reference","ref":"us.dxy"},

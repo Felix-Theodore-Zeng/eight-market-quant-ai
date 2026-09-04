@@ -18,7 +18,7 @@ def load_series(connection, series_id: str, as_of_date: str | None = None, limit
     params = [series_id, as_of_date, limit] if as_of_date else [series_id, limit]
     rows = connection.execute(f"""
       SELECT observed_date, open, high, low, close, value, volume, source, quality_status
-      FROM canonical_observations WHERE series_id=? {condition}
+      FROM canonical_observations WHERE series_id=? AND COALESCE(close,value) IS NOT NULL {condition}
       ORDER BY observed_date DESC LIMIT ?
     """, params).fetchall()
     return [dict(zip(("date","open","high","low","close","value","volume","source","quality"), row))
