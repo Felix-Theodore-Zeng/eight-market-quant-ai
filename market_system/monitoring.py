@@ -103,8 +103,12 @@ def evaluate_system(db_path: str | Path, analysis_date: str,
             }
             runtime = {"status": _worst([value["status"] for value in checks.values()]), "checks": checks}
 
-        status = _worst([run["status"], runtime["status"]] +
-                        [item["status"] for item in sources] + [item["status"] for item in packages])
+        hard_failure = run["status"] == "critical" or any(item["status"] == "critical" for item in packages)
+        has_advisory = (runtime["status"] != "ok" or any(item["status"] != "ok" for item in sources) or
+                        any(item["status"] != "ok" for item in packages))
+        # Source publication lag and slow-but-complete stages lower confidence and
+        # produce an advisory; they do not turn a completed daily report into a failure.
+        status = "critical" if hard_failure else ("warning" if has_advisory else "ok")
         payload = {"schema_version": 1, "monitor_date": date.today().isoformat(),
                    "analysis_date": analysis_date, "status": status, "daily_run": run,
                    "source_freshness": sources, "packages": packages, "runtime": runtime,
