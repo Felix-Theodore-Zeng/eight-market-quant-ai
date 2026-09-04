@@ -11,9 +11,12 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 
-NEXTGEN = Path(__file__).resolve().parents[1]
+_cwd = Path.cwd().resolve()
+NEXTGEN = Path(os.environ.get("EIGHT_MARKET_PROJECT_ROOT") or
+               (_cwd if (_cwd / "market_system").is_dir() else Path(__file__).resolve().parents[1]))
 PROJECT = NEXTGEN.parent
-PYTHON = Path(os.environ.get("EIGHT_MARKET_PYTHON", sys.executable))
+_project_python = PROJECT / ".venv" / "Scripts" / "python.exe"
+PYTHON = Path(os.environ.get("EIGHT_MARKET_PYTHON") or (_project_python if _project_python.exists() else sys.executable))
 _local_app_data = Path(os.environ.get("LOCALAPPDATA", PROJECT.parent))
 _hermes_default = _local_app_data / "hermes" / "bin" / "hermes.exe"
 HERMES = Path(os.environ.get("HERMES_EXE", shutil.which("hermes") or _hermes_default))
