@@ -151,8 +151,19 @@ def build_packages(connection, as_of_date: str, output_root: str | Path | None =
                                     "anchor": "latest completed mechanical zigzag swing"}},
                    "indicators": [_indicator_payload(connection, market, item, as_of_date, item["key"] in core)
                                   for item in items]}
+        advisories = []
+        for indicator in package["indicators"]:
+            context = indicator.get("current_context") or {}
+            if context.get("quality") == "partial":
+                advisories.append({"series_id": indicator["series_id"], "type": "component_timing",
+                                   "component_dates": context.get("component_dates"),
+                                   "detail": context.get("publication_note")})
+            if indicator.get("statistics_note"):
+                advisories.append({"series_id": indicator["series_id"], "type": "statistics_disabled",
+                                   "detail": indicator["statistics_note"]})
         package["data_quality"] = {"ok": sum(x["status"] == "ok" for x in package["indicators"]),
-                                   "unavailable": sum(x["status"] != "ok" for x in package["indicators"])}
+                                   "unavailable": sum(x["status"] != "ok" for x in package["indicators"]),
+                                   "advisories": advisories}
         body = _fit_budget(package, int(policy["max_bytes_per_market"]), core)
         path = output / f"{market}.json"
         path.write_bytes(body)

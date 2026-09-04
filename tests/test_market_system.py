@@ -9,6 +9,7 @@ from pathlib import Path
 from market_system.analytics import compute_statistics
 from market_system.ai_pipeline import _write_markdown
 from market_system.bootstrap import collect_item
+from market_system.calibration import build_monthly_calibration
 from market_system.collectors import (_iso_day, opec_momr_latest,
                                       open_meteo_black_sea_weather)
 from market_system.catalog import load_catalog
@@ -109,6 +110,15 @@ class MarketSystemTest(unittest.TestCase):
         row = self.connection.execute("SELECT ai_seconds,total_seconds FROM daily_runtime_metrics").fetchone()
         self.assertEqual(row, (120.0, 200.0))
 
+    def test_monthly_calibration_contains_all_five_diagnostic_groups(self):
+        target = Path(self.temp.name) / "calibration.json"
+        payload = build_monthly_calibration(self.db_path, "2026-08", target)
+        self.assertEqual(set(payload["five_factor_diagnostics"]), {
+            "realized_volatility_20d_60d", "empirical_percentile", "max_drawdown",
+            "ols_log_price_slope_r2", "support_resistance_touches_strength",
+        })
+        self.assertTrue(target.exists())
+
     def test_monitor_reports_missing_daily_run_without_blocking_evaluation(self):
         result = evaluate_system(self.db_path, "2026-09-03")
         self.assertEqual(result["status"], "critical")
@@ -158,6 +168,9 @@ class MarketSystemTest(unittest.TestCase):
         self.assertEqual(indicator["latest"]["date"], "2026-08-28")
         self.assertEqual(indicator["current_context"]["date"], "2026-09-03")
         self.assertEqual(indicator["current_context"]["weather"]["wind_kmh_max"], 30.0)
+        advisory = next(x for x in package["data_quality"]["advisories"]
+                        if x["series_id"] == "agriculture.black_sea_export_weather")
+        self.assertEqual(advisory["component_dates"]["weather"], "2026-09-03")
 
     def test_opec_monthly_context_does_not_publish_stitched_statistics(self):
         row = {"series_id": "energy.opec_plus_output", "observed_date": "2026-06-30",
@@ -174,6 +187,9 @@ class MarketSystemTest(unittest.TestCase):
         self.assertEqual(indicator["current_context"]["production_month"], "2026-06-30")
         self.assertEqual(indicator["statistics"], {})
         self.assertNotIn("calibration", indicator)
+        advisory = next(x for x in package["data_quality"]["advisories"]
+                        if x["series_id"] == "energy.opec_plus_output")
+        self.assertEqual(advisory["type"], "statistics_disabled")
 
 
 if __name__ == "__main__":

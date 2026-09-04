@@ -69,6 +69,7 @@ def prepare_market_jobs(package_dir: str | Path, output_dir: str | Path) -> dict
 输出 schema：{(ROOT / 'schemas' / 'market-analysis-v1.schema.json').resolve()}
 分析重点：{policy['markets'][market]['focus']}
 只允许使用输入中的指标。将 fibonacci 与波浪、Rule of 7 一样作为辅助工具：只采用程序给出的已确认锚点，说明回撤/扩展关键位及其与机械支撑阻力的共振；不得自行重选锚点，也不得单凭斐波那契提高方向置信度。可用 web_search 搜集截至 {package['as_of_date']} 的重大市场事件并给出 URL；新闻不得替代量化证据。
+低频及组合数据规则：必须读取 data_quality.advisories。event_bundle 的 latest 是最近可比较的数值观测，current_context 是截至决策日最新的组件背景，两者日期可以不同。statistics_disabled 表示统计被程序有意禁用而不是采集失败，不得自行拼接或补算。OPEC+只作为注明生产月份和公布时点的月度供给背景；黑海指标必须分别引用 exports 与 weather 的组件日期，不得把天气更新描述为出口量更新。组件滞后应降低相关证据权重，但不应把整个市场误判为数据缺失。
 {CHINESE_OUTPUT_REQUIREMENT}
 严格输出一个 JSON，不输出 Markdown。完成后执行 validate-market 门禁。"""
         prompt_path.parent.mkdir(parents=True, exist_ok=True)
